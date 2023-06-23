@@ -69,6 +69,7 @@ const AvatarUploadBtn = () => {
       userAvatarRef.set(downloadUrl);
 
       setIsLoading(false);
+      close();
       Alert.info('Avatar has been uploaded', 4000);
     } catch (err) {
       setIsLoading(false);
