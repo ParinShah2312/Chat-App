@@ -7,6 +7,7 @@
     "react": "^18.2.0",
     "react-avatar-editor": "^13.0.0",
     "react-dom": "^18.2.0",
+    "react-mic": "^12.4.6",
     "react-router-dom": "^5.2.0",
     "react-scripts": "5.0.1",
     "rsuite": "^4.10.2",
@@ -38,11 +39,11 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "",
     "eslint": "^8.27.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-react": "^7.31.10",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "prettier": "^2.7.1",
-    "@babel/plugin-proposal-private-property-in-object": ""
+    "prettier": "^2.7.1"
   }
 }
