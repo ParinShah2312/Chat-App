@@ -5,6 +5,8 @@ import { ButtonToolbar, Icon } from 'rsuite';
 import { Link } from 'react-router-dom/cjs/react-router-dom';
 import RoomInfoBtnModal from './RoomInfoBtnModal';
 import EditRoomBtnDrawer from './EditRoomBtnDrawer';
+import SendFcmBtnModal from './SendFcmBtnModal';
+import AskFcnBtnModal from './AskFcnBtnModal';
 
 const Top = () => {
   const name = useCurrentRoom(v => v.name);
@@ -29,12 +31,13 @@ const Top = () => {
           <span className="text-disappear">{name}</span>
         </h4>
         <ButtonToolbar className="ws-nowrap">
+          <AskFcnBtnModal />
           {isAdmin && <EditRoomBtnDrawer />}
         </ButtonToolbar>
       </div>
 
       <div className="d-flex justify-content-between align-items-center">
-        <span>todo</span>
+        {isAdmin && <SendFcmBtnModal />}
         <RoomInfoBtnModal />
       </div>
     </div>

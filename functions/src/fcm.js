@@ -13,58 +13,62 @@ const admin = require('firebase-admin');
 const database = admin.database();
 const messaging = admin.messaging();
 
-exports.sendFcm = functions.https.onCall(async (data, context) => {
-  checkIfAuth(context);
+exports.sendFcm = functions
+  .region('asia-southeast1')
+  .https.onCall(async (data, context) => {
+    checkIfAuth(context);
 
-  const { chatId, title, message } = data;
-  const roomSnap = await database.ref(`/rooms/${chatId}`).once('value');
+    const { chatId, title, message } = data;
 
-  if (!roomSnap.exists()) {
-    return false;
-  }
+    const roomSnap = await database.ref(`/rooms/${chatId}`).once('value');
 
-  const roomData = roomSnap.val();
+    if (!roomSnap.exists()) {
+      return false;
+    }
 
-  checkIfAllowed(context, transformToArr(roomData.admins));
+    const roomData = roomSnap.val();
 
-  const fcmUsers = transformToArr(roomData.fcmUsers);
-  const userTokensPromises = fcmUsers.map(uid => getUserTokens(uid));
-  const userTokensResult = await Promise.all(userTokensPromises);
+    checkIfAllowed(context, transformToArr(roomData.admins));
 
-  const tokens = userTokensResult.reduce(
-    (accTokens, userTokens) => [...accTokens, ...userTokens],
-    []
-  );
+    const fcmUsers = transformToArr(roomData.fcmUsers);
+    const userTokensPromises = fcmUsers.map(uid => getUserTokens(uid));
+    const userTokensResult = await Promise.all(userTokensPromises);
 
-  if (tokens.length === 0) {
-    return false;
-  }
+    const tokens = userTokensResult.reduce(
+      (accTokens, userTokens) => [...accTokens, ...userTokens],
+      []
+    );
 
-  const fcmMessage = {
-    notification: {
-      title: `${title} (${roomData.name})`,
-      body: message,
-    },
-    tokens,
-  };
+    if (tokens.length === 0) {
+      return false;
+    }
 
-  const batchResponse = await messaging.sendMulticast(fcmMessage);
+    const fcmMessage = {
+      notification: {
+        title: `${title} (${roomData.name})`,
+        body: message,
+      },
+      tokens,
+    };
 
-  const failedTokens = [];
-  if (batchResponse.failureCount > 0) {
-    batchResponse.responses.forEach((resp, idx) => {
-      if (!resp.success) {
-        failedTokens.push(tokens[idx]);
-      }
-    });
-  }
+    const batchResponse = await messaging.sendMulticast(fcmMessage);
 
-  const removePromises = failedTokens.map(token =>
-    database.ref(`/fcm_tokens/${token}`).remove()
-  );
+    const failedTokens = [];
 
-  return Promise.all(removePromises).catch(err => err.message);
-});
+    if (batchResponse.failureCount > 0) {
+      batchResponse.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          failedTokens.push(tokens[idx]);
+        }
+      });
+    }
+
+    const removePromises = failedTokens.map(token =>
+      database.ref(`/fcm_tokens/${token}`).remove()
+    );
+
+    return Promise.all(removePromises).catch(err => err.message);
+  });
 
 function checkIfAuth(context) {
   if (!context.auth) {
@@ -94,8 +98,10 @@ async function getUserTokens(uid) {
     .orderByValue()
     .equalTo(uid)
     .once('value');
+
   if (!userTokensSnap.hasChildren()) {
     return [];
   }
+
   return Object.keys(userTokensSnap.val());
 }

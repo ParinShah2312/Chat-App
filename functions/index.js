@@ -1,10 +1,7 @@
 /* eslint-disable object-curly-spacing */
 /* eslint-disable quotes */
 /* eslint-disable no-unused-vars */
-
-const { onRequest } = require('firebase-functions/v2/https');
-const logger = require('firebase-functions/logger');
-
+const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
 const serviceAccount = require('./service-account.json');
