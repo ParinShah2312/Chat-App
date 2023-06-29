@@ -1,15 +1,24 @@
 import { createContext, useState, useContext, useEffect } from 'react';
-import firebase from 'firebase/app';
-import { auth, database, messaging } from '../misc/firebase';
+import { auth, database, fcmVapidKey, messaging } from '../misc/firebase';
+import {
+  serverTimestamp,
+  ref,
+  onValue,
+  onDisconnect,
+  set,
+  off,
+} from 'firebase/database';
+import { getToken } from 'firebase/messaging';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export const isOfflineForDatabase = {
   state: 'offline',
-  last_changed: firebase.database.ServerValue.TIMESTAMP,
+  last_changed: serverTimestamp(),
 };
 
 const isOnlineForDatabase = {
   state: 'online',
-  last_changed: firebase.database.ServerValue.TIMESTAMP,
+  last_changed: serverTimestamp(),
 };
 
 const ProfileContext = createContext();
@@ -22,12 +31,12 @@ export const ProfileProvider = ({ children }) => {
     let userRef;
     let userStatusRef;
 
-    const authUnsub = auth.onAuthStateChanged(async authObj => {
+    const authUnsub = onAuthStateChanged(auth, async authObj => {
       if (authObj) {
-        userStatusRef = database.ref(`/status/${authObj.uid}`);
-        userRef = database.ref(`/profiles/${authObj.uid}`);
+        userStatusRef = ref(database, `/status/${authObj.uid}`);
+        userRef = ref(database, `/profiles/${authObj.uid}`);
 
-        userRef.on('value', snap => {
+        onValue(userRef, snap => {
           const { name, createdAt, avatar } = snap.val();
 
           const data = {
@@ -41,26 +50,28 @@ export const ProfileProvider = ({ children }) => {
           setIsLoading(false);
         });
 
-        database.ref('.info/connected').on('value', snapshot => {
+        onValue(ref(database, '.info/connected'), snapshot => {
           if (!!snapshot.val() === false) {
             return;
           }
 
-          userStatusRef
-            .onDisconnect()
+          onDisconnect(userStatusRef)
             .set(isOfflineForDatabase)
             .then(() => {
-              userStatusRef.set(isOnlineForDatabase);
+              set(userStatusRef, isOnlineForDatabase);
             });
         });
 
         if (messaging) {
           try {
-            const currentToken = await messaging.getToken();
+            const currentToken = await getToken(messaging, {
+              vapidKey: fcmVapidKey,
+            });
             if (currentToken) {
-              await database
-                .ref(`/fcm_tokens/${currentToken}`)
-                .set(authObj.uid);
+              await set(
+                ref(database, `/fcm_tokens/${currentToken}`),
+                authObj.uid
+              );
             }
           } catch (err) {
             console.log('An error occurred while retrieving token. ', err);
@@ -68,14 +79,14 @@ export const ProfileProvider = ({ children }) => {
         }
       } else {
         if (userRef) {
-          userRef.off();
+          off(userRef);
         }
 
         if (userStatusRef) {
-          userStatusRef.off();
+          off(userStatusRef);
         }
 
-        database.ref('.info/connected').off();
+        off(ref(database, '.info/connected'));
 
         setProfile(null);
         setIsLoading(false);
@@ -85,14 +96,14 @@ export const ProfileProvider = ({ children }) => {
     return () => {
       authUnsub();
 
-      database.ref('.info/connected').off();
+      off(ref(database, '.info/connected'));
 
       if (userRef) {
-        userRef.off();
+        off(userRef);
       }
 
       if (userStatusRef) {
-        userStatusRef.off();
+        off(userStatusRef);
       }
     };
   }, []);

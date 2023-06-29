@@ -5,6 +5,7 @@ import { useCurrentRoom } from '../../../context/current-room.context';
 import { memo } from 'react';
 import { useParams } from 'react-router-dom/cjs/react-router-dom';
 import { database } from '../../../misc/firebase';
+import { ref, set } from 'firebase/database';
 
 const EditRoomBtnDrawer = () => {
   const { isOpen, open, close } = useModalState();
@@ -15,10 +16,7 @@ const EditRoomBtnDrawer = () => {
   const description = useCurrentRoom(v => v.description);
 
   const updateData = (key, value) => {
-    database
-      .ref(`/rooms/${chatId}`)
-      .child(key)
-      .set(value)
+    set(ref(database, `rooms/${chatId}/${key}`), value)
       .then(() => {
         Alert.success('Successfully updated', 4000);
       })

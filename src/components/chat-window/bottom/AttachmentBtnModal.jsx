@@ -4,6 +4,7 @@ import InputGroupButton from 'rsuite/lib/InputGroup/InputGroupButton';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom/cjs/react-router-dom';
 import { storage } from '../../../misc/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const MAX_FILE_SIZE = 1000 * 1024 * 5;
 
@@ -24,12 +25,13 @@ const AttachmentBtnModal = ({ afterUpload }) => {
   const onUpload = async () => {
     try {
       const uploadPromises = fileList.map(f => {
-        return storage
-          .ref(`/chat${chatId}`)
-          .child(Date.now() + f.name)
-          .put(f.blobFile, {
+        return uploadBytes(
+          ref(storage, `/chat/${chatId}/${Date.now() + f.name}`),
+          f.blobFile,
+          {
             cacheControl: `public, max-age=${3600 * 24 * 3}`,
-          });
+          }
+        );
       });
 
       const uploadSnapshots = await Promise.all(uploadPromises);
@@ -38,7 +40,7 @@ const AttachmentBtnModal = ({ afterUpload }) => {
         return {
           contentType: snap.metadata.contentType,
           name: snap.metadata.name,
-          url: await snap.ref.getDownloadURL(),
+          url: await getDownloadURL(snap.ref),
         };
       });
 

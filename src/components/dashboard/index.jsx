@@ -5,6 +5,7 @@ import { database } from '../../misc/firebase';
 import ProviderBlock from './ProviderBlock';
 import AvatarUploadBtn from './AvatarUploadBtn';
 import { getUserUpdates } from '../../misc/helper';
+import { ref, update } from 'firebase/database';
 
 const Dashboard = ({ onSignOut }) => {
   const { profile } = useProfile();
@@ -18,7 +19,7 @@ const Dashboard = ({ onSignOut }) => {
         database
       );
 
-      await database.ref().update(updates);
+      await update(ref(database), updates);
 
       Alert.success('Nickname has been updated', 4000);
     } catch (err) {

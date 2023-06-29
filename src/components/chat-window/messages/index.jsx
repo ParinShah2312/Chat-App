@@ -1,12 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom/cjs/react-router-dom';
 import { auth, database, storage } from '../../../misc/firebase';
-import { groupBy, tranformToArrWithId } from '../../../misc/helper';
+import { groupBy, transformToArrWithId } from '../../../misc/helper';
 import MessageItem from './MessageItem';
 import { Alert, Button } from 'rsuite';
+import {
+  ref as dbRef,
+  runTransaction,
+  off,
+  onValue,
+  query,
+  orderByChild,
+  limitToLast,
+  equalTo,
+  update,
+} from 'firebase/database';
+import { deleteObject, ref as storageRef } from 'firebase/storage';
 
 const PAGE_SIZE = 15;
-const messagesRef = database.ref('/messages');
+const messagesRef = dbRef(database, '/messages');
 
 function shouldScrollToBottom(node, threshold = 30) {
   const percentage =
@@ -25,22 +37,27 @@ const Messages = () => {
   const canShowMessages = messages && messages.length > 0;
 
   const loadMessages = useCallback(
-    limitToLast => {
+    limitToUse => {
       const node = selfRef.current;
-      messagesRef.off();
 
-      messagesRef
-        .orderByChild('roomId')
-        .equalTo(chatId)
-        .limitToLast(limitToLast || PAGE_SIZE)
-        .on('value', snap => {
-          const data = tranformToArrWithId(snap.val());
+      off(messagesRef);
+
+      onValue(
+        query(
+          messagesRef,
+          orderByChild('roomId'),
+          equalTo(chatId),
+          limitToLast(limitToUse || PAGE_SIZE)
+        ),
+        snap => {
+          const data = transformToArrWithId(snap.val());
           setMessages(data);
 
           if (shouldScrollToBottom(node)) {
             node.scrollTop = node.scrollHeight;
           }
-        });
+        }
+      );
 
       setLimit(p => p + PAGE_SIZE);
     },
@@ -69,27 +86,29 @@ const Messages = () => {
     }, 200);
 
     return () => {
-      messagesRef.off('value');
+      off(messagesRef);
     };
   }, [loadMessages]);
 
   const handleAdmin = useCallback(
     async uid => {
-      const adminsRef = database.ref(`/rooms/${chatId}/admins`);
       let alertMsg;
 
-      await adminsRef.transaction(admins => {
-        if (admins) {
-          if (admins[uid]) {
-            admins[uid] = null;
-            alertMsg = 'Admin permission revoked';
-          } else {
-            admins[uid] = true;
-            alertMsg = 'Admin permission granted';
+      await runTransaction(
+        dbRef(database, `/rooms/${chatId}/admins`),
+        admins => {
+          if (admins) {
+            if (admins[uid]) {
+              admins[uid] = null;
+              alertMsg = 'Admin permission revoked';
+            } else {
+              admins[uid] = true;
+              alertMsg = 'Admin permission granted';
+            }
           }
+          return admins;
         }
-        return admins;
-      });
+      );
       Alert.info(alertMsg, 4000);
     },
     [chatId]
@@ -97,10 +116,10 @@ const Messages = () => {
 
   const handleLike = useCallback(async msgId => {
     const { uid } = auth.currentUser;
-    const messageRef = database.ref(`/messages/${msgId}`);
+    const messageRef = dbRef(database, `/messages/${msgId}`);
     let alertMsg;
 
-    await messageRef.transaction(msg => {
+    await runTransaction(messageRef, msg => {
       if (msg) {
         if (msg.likes && msg.likes[uid]) {
           msg.likeCount -= 1;
@@ -143,7 +162,8 @@ const Messages = () => {
       }
 
       try {
-        await database.ref().update(updates);
+        await update(dbRef(database), updates);
+
         Alert.info('Message has been deleted', 4000);
       } catch (err) {
         return Alert.error(err.message, 4000);
@@ -151,8 +171,8 @@ const Messages = () => {
 
       if (file) {
         try {
-          const fileRef = storage.refFromURL(file.url);
-          await fileRef.delete();
+          const fileRef = storageRef(storage, file.url);
+          await deleteObject(fileRef);
         } catch (err) {
           Alert.error(err.message, 4000);
         }

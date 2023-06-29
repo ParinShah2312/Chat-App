@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Alert, Icon, Input, InputGroup } from 'rsuite';
-import firebase from 'firebase/app';
+import { serverTimestamp, ref, push, update } from 'firebase/database';
 import { useProfile } from '../../../context/profile.context';
 import { useParams } from 'react-router-dom/cjs/react-router-dom';
 import { database } from '../../../misc/firebase';
@@ -16,7 +16,7 @@ function assembleMessage(profile, chatId) {
       createdAt: profile.createdAt,
       ...(profile.avatar ? { avatar: profile.avatar } : {}),
     },
-    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    createdAt: serverTimestamp(),
     likeCount: 0,
   };
 }
@@ -41,7 +41,7 @@ const ChatBottom = () => {
 
     const updates = {};
 
-    const messageId = database.ref('messages').push().key;
+    const messageId = push(ref(database, 'messages')).key;
 
     updates[`/messages/${messageId}`] = msgData;
     updates[`/rooms/${chatId}/lastMessage`] = {
@@ -51,7 +51,7 @@ const ChatBottom = () => {
 
     setIsLoading(true);
     try {
-      await database.ref().update(updates);
+      await update(ref(database), updates);
 
       setInput('');
       setIsLoading(false);
@@ -75,30 +75,30 @@ const ChatBottom = () => {
       const updates = {};
 
       files.forEach(file => {
-        const msgData = assembleMessage(profile, chatId);
+        const msgData = assembleMessage(profile, window.chatId);
         msgData.file = file;
 
-        const messageId = database.ref('messages').push().key;
+        const messageId = push(ref(database, 'messages')).key;
 
         updates[`/messages/${messageId}`] = msgData;
       });
 
       const lastMsgId = Object.keys(updates).pop();
 
-      updates[`/rooms/${chatId}/lastMessage`] = {
+      updates[`/rooms/${window.chatId}/lastMessage`] = {
         ...updates[lastMsgId],
         msgId: lastMsgId,
       };
 
       try {
-        await database.ref().update(updates);
+        await update(ref(database), updates);
         setIsLoading(false);
       } catch (err) {
         setIsLoading(false);
         Alert.error(err.message);
       }
     },
-    [chatId, profile]
+    [profile]
   );
 
   return (

@@ -1,9 +1,9 @@
-import firebase from 'firebase/app';
-import 'firebase/auth';
-import 'firebase/database';
-import 'firebase/storage';
-import 'firebase/messaging';
-import 'firebase/functions';
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getDatabase } from 'firebase/database';
+import { getStorage } from 'firebase/storage';
+import { getMessaging, isSupported, onMessage } from 'firebase/messaging';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { isLocalhost } from './helper';
 import { Notification as Toast } from 'rsuite';
 
@@ -18,28 +18,24 @@ const config = {
   appId: '1:409445021925:web:47052b3ff49b756ad3bc0c',
 };
 
-const app = firebase.initializeApp(config);
+const app = initializeApp(config);
 
-export const auth = app.auth();
-export const database = app.database();
-export const storage = app.storage();
-export const functions = app.functions('asia-southeast1');
+export const fcmVapidKey =
+  'BAAGkJGbBGbnp7_zEgW5AwzW3bpn9D4Xf2bXdr9iiZeM-c_N9smBIY08Vk9q1SLDchIjwKubz-BiaWXJY7V5KQg';
+export const auth = getAuth(app);
+export const database = getDatabase(app);
+export const storage = getStorage(app);
+export const functions = getFunctions(app, 'asia-southeast1');
 
-export const messaging = firebase.messaging.isSupported()
-  ? app.messaging()
-  : null;
+export const messaging = isSupported() ? getMessaging(app) : null;
 
 if (messaging) {
-  messaging.usePublicVapidKey(
-    'BAAGkJGbBGbnp7_zEgW5AwzW3bpn9D4Xf2bXdr9iiZeM-c_N9smBIY08Vk9q1SLDchIjwKubz-BiaWXJY7V5KQg'
-  );
-
-  messaging.onMessage(({ notification }) => {
+  onMessage(messaging, ({ notification }) => {
     const { title, body } = notification;
     Toast.info({ title, description: body, duration: 0 });
   });
 }
 
 if (isLocalhost) {
-  functions.useEmulator('http://localhost:5001');
+  connectFunctionsEmulator(functions, 'localhost', 5001);
 }

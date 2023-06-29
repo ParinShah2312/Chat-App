@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { auth } from '../../misc/firebase';
 import { Alert, Button, Icon, Tag } from 'rsuite';
-import firebase from 'firebase/app';
+import { FacebookAuthProvider, GoogleAuthProvider } from 'firebase/auth';
 
 const ProviderBlock = () => {
   const [isConnected, setIsConnected] = useState({
@@ -54,10 +54,10 @@ const ProviderBlock = () => {
   };
 
   const linkFacebook = () => {
-    link(new firebase.auth.FacebookAuthProvider());
+    link(new FacebookAuthProvider());
   };
   const linkGoogle = () => {
-    link(new firebase.auth.GoogleAuthProvider());
+    link(new GoogleAuthProvider());
   };
 
   return (

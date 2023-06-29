@@ -4,15 +4,14 @@ import Dashboard from '.';
 import { auth, database } from '../../misc/firebase';
 import { isOfflineForDatabase } from '../../context/profile.context';
 import { useCallback } from 'react';
+import { ref, set } from 'firebase/database';
 
 const DashboardToggle = () => {
   const { isOpen, close, open } = useModalState();
   const isMobile = useMediaQuery('(max-width: 992px)');
 
   const onSignOut = useCallback(() => {
-    database
-      .ref(`/status/${auth.currentUser.uid}`)
-      .set(isOfflineForDatabase)
+    set(ref(database, `/status/${auth.currentUser.uid}`), isOfflineForDatabase)
       .then(() => {
         auth.signOut();
         Alert.info('Signed out', 4000);

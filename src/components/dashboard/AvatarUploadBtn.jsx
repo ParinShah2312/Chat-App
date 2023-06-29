@@ -6,6 +6,12 @@ import { useProfile } from '../../context/profile.context';
 import { database, storage } from '../../misc/firebase';
 import ProfileAvatar from '../ProfileAvatar';
 import { getUserUpdates } from '../../misc/helper';
+import {
+  getDownloadURL,
+  ref as storageRef,
+  uploadBytes,
+} from 'firebase/storage';
+import { ref as dbRef, update } from 'firebase/database';
 
 const fileInputTypes = '.png, .jpeg, .jpg';
 
@@ -53,15 +59,16 @@ const AvatarUploadBtn = () => {
     try {
       const blob = await getBlob(canvas);
 
-      const avatarFileRef = storage
-        .ref(`/profile/${profile.uid}`)
-        .child('avatar');
+      const avatarFileRef = storageRef(
+        storage,
+        `/profile/${profile.uid}/avatar`
+      );
 
-      const uploadAvatarResult = await avatarFileRef.put(blob, {
+      await uploadBytes(avatarFileRef, blob, {
         cacheControl: `public, max-age=${3600 * 24 * 3}`,
       });
 
-      const downloadUrl = await uploadAvatarResult.ref.getDownloadURL();
+      const downloadUrl = await getDownloadURL(avatarFileRef);
 
       const updates = await getUserUpdates(
         profile.uid,
@@ -70,7 +77,7 @@ const AvatarUploadBtn = () => {
         database
       );
 
-      await database.ref().update(updates);
+      await update(dbRef(database), updates);
 
       setIsLoading(false);
       close();

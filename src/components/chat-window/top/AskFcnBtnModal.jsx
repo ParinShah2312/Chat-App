@@ -3,6 +3,7 @@ import { useCurrentRoom } from '../../../context/current-room.context';
 import { useModalState } from '../../../misc/custom-hooks';
 import { database, auth } from '../../../misc/firebase';
 import { useParams } from 'react-router-dom/cjs/react-router-dom';
+import { ref, remove, set } from 'firebase/database';
 
 const AskFcmBtnModal = () => {
   const { chatId } = useParams();
@@ -10,17 +11,14 @@ const AskFcmBtnModal = () => {
   const { isOpen, close, open } = useModalState();
 
   const onAccept = () => {
-    database
-      .ref(`/rooms/${chatId}/fcmUsers`)
-      .child(auth.currentUser.uid)
-      .set(true);
+    set(
+      ref(database, `/rooms/${chatId}/fcmUsers/${auth.currentUser.uid}`),
+      true
+    );
   };
 
   const onCancel = () => {
-    database
-      .ref(`/rooms/${chatId}/fcmUsers`)
-      .child(auth.currentUser.uid)
-      .remove();
+    remove(ref(database, `/rooms/${chatId}/fcmUsers/${auth.currentUser.uid}`));
   };
 
   return (

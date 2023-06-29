@@ -5,12 +5,17 @@ import ChatTop from '../../components/chat-window/top';
 import { useRooms } from '../../context/rooms.context';
 import { Loader } from 'rsuite';
 import { CurrentRoomProvider } from '../../context/current-room.context';
-import { tranformToArr } from '../../misc/helper';
+import { transformToArr } from '../../misc/helper';
 import { auth } from '../../misc/firebase';
+import { useEffect } from 'react';
 
 const Chat = () => {
   const { chatId } = useParams();
   const rooms = useRooms();
+
+  useEffect(() => {
+    window.chatId = chatId;
+  }, [chatId]);
 
   if (!rooms) {
     return <Loader center vertical content="Loading" speed="slow" size="md" />;
@@ -24,8 +29,8 @@ const Chat = () => {
 
   const { name, description } = currentRoom;
 
-  const admins = tranformToArr(currentRoom.admins);
-  const fcmUsers = tranformToArr(currentRoom.fcmUsers);
+  const admins = transformToArr(currentRoom.admins);
+  const fcmUsers = transformToArr(currentRoom.fcmUsers);
   const isAdmin = admins.includes(auth.currentUser.uid);
   const isReceivingFcm = fcmUsers.includes(auth.currentUser.uid);
 

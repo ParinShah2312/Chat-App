@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { database } from './firebase';
+import { off, onValue, ref } from 'firebase/database';
 
 export function useModalState(defaultValue = false) {
   const [isOpen, setIsOpen] = useState(defaultValue);
@@ -32,16 +33,16 @@ export function usePresence(uid) {
   const [presence, setPresence] = useState(null);
 
   useEffect(() => {
-    const userStatusRef = database.ref(`/status/${uid}`);
+    const userStatusRef = ref(database, `/status/${uid}`);
 
-    userStatusRef.on('value', snap => {
+    onValue(userStatusRef, snap => {
       if (snap.exists()) {
         const data = snap.val();
         setPresence(data);
       }
     });
     return () => {
-      userStatusRef.off();
+      off(userStatusRef);
     };
   }, [uid]);
 
@@ -49,25 +50,28 @@ export function usePresence(uid) {
 }
 
 export function useHover() {
-  const [value, setValue] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
-  const ref = useRef(null);
+  const elementRef = useRef(null);
 
-  const handleMouseOver = () => setValue(true);
-  const handleMouseOut = () => setValue(false);
+  const handleMouseOver = () => setIsHovered(true);
+  const handleMouseOut = () => setIsHovered(false);
 
-  useEffect(() => {
-    const node = ref.current;
-    if (node) {
-      node.addEventListener('mouseover', handleMouseOver);
-      node.addEventListener('mouseout', handleMouseOut);
-    }
-    return () => {
-      node.removeEventListener('mouseover', handleMouseOver);
-      node.removeEventListener('mouseout', handleMouseOut);
-    };
+  useEffect(
+    () => {
+      const node = elementRef.current;
+      if (node) {
+        node.addEventListener('mouseover', handleMouseOver);
+        node.addEventListener('mouseout', handleMouseOut);
+      }
+      return () => {
+        node.removeEventListener('mouseover', handleMouseOver);
+        node.removeEventListener('mouseout', handleMouseOut);
+      };
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ref.current]);
+    [elementRef.current]
+  );
 
-  return [ref, value];
+  return [elementRef, isHovered];
 }

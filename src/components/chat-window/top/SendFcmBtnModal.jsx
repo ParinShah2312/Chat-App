@@ -10,6 +10,7 @@ import {
   Schema,
 } from 'rsuite';
 import { useModalState } from '../../../misc/custom-hooks';
+import { httpsCallable } from 'firebase/functions';
 import { useCallback, useRef, useState } from 'react';
 import { functions } from '../../../misc/firebase';
 import { useParams } from 'react-router-dom/cjs/react-router-dom';
@@ -46,7 +47,7 @@ const SendFcnBtnModal = () => {
     setIsLoading(true);
 
     try {
-      const sendFcm = functions.httpsCallable('sendFcm');
+      const sendFcm = httpsCallable(functions, 'sendFcm');
       await sendFcm({ chatId, ...formValue });
 
       setIsLoading(false);
