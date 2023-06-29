@@ -6,21 +6,24 @@ import SignIn from './pages/SignIn';
 import Home from './pages/Home';
 import PublicRoute from './components/PublicRoute';
 import { ProfileProvider } from './context/profile.context';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function App() {
   return (
-    <BrowserRouter>
-      <ProfileProvider>
-        <Switch>
-          <PublicRoute path="/signin">
-            <SignIn />
-          </PublicRoute>
-          <PrivateRoute path="/">
-            <Home />
-          </PrivateRoute>
-        </Switch>
-      </ProfileProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ProfileProvider>
+          <Switch>
+            <PublicRoute path="/signin">
+              <SignIn />
+            </PublicRoute>
+            <PrivateRoute path="/">
+              <Home />
+            </PrivateRoute>
+          </Switch>
+        </ProfileProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
