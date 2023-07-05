@@ -28,7 +28,7 @@ const INITIAL_FORM = {
 };
 
 const SendFcnBtnModal = () => {
-  const { chatId } = useParams;
+  const { chatId } = useParams();
   const { isOpen, open, close } = useModalState();
 
   const [formValue, setFormValue] = useState(INITIAL_FORM);

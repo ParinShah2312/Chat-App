@@ -13,7 +13,7 @@ const config = {
   databaseURL:
     'https://chat-app-f7851-default-rtdb.asia-southeast1.firebasedatabase.app/',
   projectId: 'chat-app-f7851',
-  storageBucket: 'gs://chat-app-f7851.appspot.com',
+  storageBucket: 'chat-app-f7851.appspot.com',
   messagingSenderId: '409445021925',
   appId: '1:409445021925:web:47052b3ff49b756ad3bc0c',
 };
